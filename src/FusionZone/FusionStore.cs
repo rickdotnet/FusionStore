@@ -28,6 +28,29 @@ public class FusionStore<T> : IDataStore<T>
             : StoreResult<T>.Success(id, result.Value);
     }
 
+    // I would not consider this method safe
+    // there is no protection against memory exhaustion
+    public ValueTask<IEnumerable<IStoreResult<T>>> Get(long[] ids, CancellationToken token)
+    {
+        var results = GetManyInternal(ids);
+        return ValueTask.FromResult(results);
+    }
+    
+    private IEnumerable<IStoreResult<T>> GetManyInternal(IEnumerable<long> ids)
+    {
+        foreach (var id in ids)
+        {
+            var key = $"{cacheName}-{id}";
+            
+            var cacheHit = cache.TryGet<T>(key);
+            if (cacheHit.HasValue)
+                yield return StoreResult<T>.Success(id, cacheHit);
+            else
+                yield return StoreResult<T>.Fail(id, "Item not found");
+        }
+    }
+
+
     public async ValueTask<IStoreResult<T>> Insert(T data, CancellationToken token)
     {
         var result = await innerStore.Insert(data, token);

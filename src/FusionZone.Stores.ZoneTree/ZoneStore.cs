@@ -25,6 +25,27 @@ public class ZoneStore<T> : IDataStore<T>
         return ValueTask.FromResult(StoreResult<T>.Success(id, result));
     }
 
+    public ValueTask<IEnumerable<IStoreResult<T>>> Get(long[] ids, CancellationToken token)
+    {
+        var results = GetManyInternal(ids);
+        return ValueTask.FromResult(results);
+    }
+
+    private IEnumerable<IStoreResult<T>> GetManyInternal(IEnumerable<long> ids)
+    {
+        foreach (var id in ids)
+        {
+            if (!zoneTree.TryGet(id, out var json)) continue;
+            
+            var result = JsonSerializer.Deserialize<T>(json);
+            
+            if (result != null)
+                yield return StoreResult<T>.Success(id, result);
+            else
+                yield return StoreResult<T>.Fail(id, "Item not found");
+        }
+    }
+
     public ValueTask<IStoreResult<T>> Insert(T data, CancellationToken token)
     {
         var id = idGenerator.CreateId();
@@ -45,8 +66,8 @@ public class ZoneStore<T> : IDataStore<T>
         if (itemToDelete.Value == null)
             return StoreResult<T>.Fail(id, "Item not found.");
 
-        return zoneTree.TryDelete(id, out var _) 
-            ? StoreResult<T>.Success(id, itemToDelete.Value) 
+        return zoneTree.TryDelete(id, out var _)
+            ? StoreResult<T>.Success(id, itemToDelete.Value)
             : StoreResult<T>.Fail(id, "Item not found.");
     }
 }
