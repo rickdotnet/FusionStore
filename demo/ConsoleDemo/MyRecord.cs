@@ -1,12 +1,6 @@
-﻿namespace ConsoleDemo;
+﻿using FusionZone.Abstractions;
 
-public record MyRecord
-{
-    public int Id { get; set; }
-    public required string Message { get; set; }
+namespace ConsoleDemo;
 
-    public override string ToString()
-    {
-        return Message;
-    }
-}
+public record MyHasIdRecord(long Id, string Message) : IHaveId;
+public record MyNonIdRecord(string Message);

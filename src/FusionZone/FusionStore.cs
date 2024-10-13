@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using FusionZone.Abstractions;
 using ZiggyCreatures.Caching.Fusion;
 
@@ -15,72 +16,59 @@ public class FusionStore<T> : IDataStore<T>
         this.cache = cache;
     }
 
-    public async ValueTask<IStoreResult<T>> Get(long id, CancellationToken token)
+    public async ValueTask<StoreResult<T>> Get(long id, CancellationToken token)
     {
-        var key = $"{cacheName}-{id}";
+        var key = GetCacheKey(id);
         var cacheHit = await cache.TryGetAsync<T>(key, token: token);
         if (cacheHit.HasValue)
-            return StoreResult<T>.Success(id, cacheHit.Value);
-        
-        var result = await innerStore.Get(id, token);
-        return !result.Succeeded 
-            ? result 
-            : StoreResult<T>.Success(id, result.Value);
-    }
+            return StoreResult.Success(cacheHit.Value);
 
-    // I would not consider this method safe
-    // there is no protection against memory exhaustion
-    public ValueTask<IEnumerable<IStoreResult<T>>> Get(long[] ids, CancellationToken token)
-    {
-        var results = GetManyInternal(ids);
-        return ValueTask.FromResult(results);
-    }
-    
-    private IEnumerable<IStoreResult<T>> GetManyInternal(IEnumerable<long> ids)
-    {
-        foreach (var id in ids)
+        var storeResult = await innerStore.Get(id, token);
+        return await storeResult.Select(async x =>
         {
-            var key = $"{cacheName}-{id}";
-            
-            var cacheHit = cache.TryGet<T>(key);
-            if (cacheHit.HasValue)
-                yield return StoreResult<T>.Success(id, cacheHit);
-            else
-                yield return StoreResult<T>.Fail(id, "Item not found");
-        }
+            await cache.SetAsync(key, x, token: token);
+            return x;
+        });
     }
 
-
-    public async ValueTask<IStoreResult<T>> Insert(T data, CancellationToken token)
+    public async ValueTask<(StoreResult<T> result, long id)> Insert(T data, CancellationToken token)
     {
-        var result = await innerStore.Insert(data, token);
-        if (!result.Succeeded) return result;
+        var (insertResult, id) = await innerStore.Insert(data, token);
+        var result = await insertResult.Select(async x =>
+        {
+            var key = GetCacheKey(id);
+            await cache.SetAsync(key, data, token: token);
+            return x;
+        });
 
-        var key = $"{cacheName}-{result.Id}";
-        await cache.SetAsync(key, data, token: token);
-
-        return StoreResult<T>.Success(result.Id, data);
+        return (result, id);
     }
 
-    public async ValueTask<IStoreResult<T>> Save(long id, T data, CancellationToken token)
+    public async ValueTask<StoreResult<T>> Save(long id, T data, CancellationToken token)
     {
-        var result = await innerStore.Save(id, data, token);
-        if (!result.Succeeded) return result;
-
-        var key = $"{cacheName}-{id}";
-        await cache.SetAsync(key, data, token: token);
-
-        return StoreResult<T>.Success(id, data);
-    }
-
-    public async ValueTask<IStoreResult<T>> Delete(long id, CancellationToken token)
-    {
-        var result = await innerStore.Delete(id, token);
-        if (!result.Succeeded) return result;
-
-        var key = $"{cacheName}-{id}";
-        await cache.RemoveAsync(key, token: token);
+        var saveResult = await innerStore.Save(id, data, token);
+        var result = await saveResult.Select(async x =>
+        {
+            var key = GetCacheKey(id);
+            await cache.SetAsync(key, x, token: token);
+            return x;
+        });
 
         return result;
     }
+
+    public async ValueTask<StoreResult<T>> Delete(long id, CancellationToken token)
+    {
+        var deleteResult = await innerStore.Delete(id, token);
+        var result = await deleteResult.Select(async x =>
+        {
+            var key = GetCacheKey(id);
+            await cache.RemoveAsync(key, token: token);
+            return x;
+        });
+
+        return result;
+    }
+
+    private string GetCacheKey(long id) => $"{cacheName}-{id}";
 }
