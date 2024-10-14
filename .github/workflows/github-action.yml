@@ -4,6 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths: "build/version.props"
+  workflow_dispatch:
 
 jobs:
   publish:

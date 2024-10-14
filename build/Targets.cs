@@ -7,5 +7,4 @@ internal static class Targets
     public const string CleanPackOutput = "clean-pack-output";
     public const string Pack = "pack";
     public const string Publish = "publish";
-    public const string GenerateDocs = "generate-docs";
 }
