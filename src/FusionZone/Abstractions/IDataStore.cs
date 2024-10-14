@@ -1,10 +1,11 @@
 namespace FusionZone.Abstractions;
 
-public interface IDataStore<T> 
+public interface IDataStore<TData> : IDataStore<long, TData>; 
+public interface IDataStore<TKey,TData> 
 {
-    ValueTask<StoreResult<T>> Get(long id, CancellationToken token);
-    ValueTask<(StoreResult<T> result, long id)> Insert(T data, CancellationToken token);
+    ValueTask<StoreResult<TData>> Get(TKey id, CancellationToken token);
+    ValueTask<(StoreResult<TData> result, TKey id)> Insert(TData data, CancellationToken token);
     //ValueTask<StoreResult<T>> Insert(T data, CancellationToken token);
-    ValueTask<StoreResult<T>> Save(long id, T data, CancellationToken token);
-    ValueTask<StoreResult<T>> Delete(long id, CancellationToken token);
+    ValueTask<StoreResult<TData>> Save(TKey id, TData data, CancellationToken token);
+    ValueTask<StoreResult<TData>> Delete(TKey id, CancellationToken token);
 }

@@ -20,37 +20,31 @@ var zoneTree = new ZoneTreeFactory<long, string>()
     .OpenOrCreate();
 
 var fusionCache = new FusionCache(new FusionCacheOptions());
-var zoneStore = new ZoneStore<MyHasIdRecord>(zoneTree, new IdGenerator(0));
-var myRecordStore = new FusionStore<MyHasIdRecord>(zoneStore, fusionCache);
+var zoneStore = new ZoneStore<MyRecord>(zoneTree, new IdGenerator(0));
+var myRecordStore = new FusionStore<MyRecord>(zoneStore, fusionCache);
 
-var zoneStore2 = new ZoneStore<MyNonIdRecord>(zoneTree, new IdGenerator(0));
-var myRecordStore2 = new FusionStore<MyNonIdRecord>(zoneStore2, fusionCache);
-
-
-// test with id provided
-var myRecord = new MyHasIdRecord(Id: 153, Message: "Hello, World!");
-
-// test without id provided
-var myOtherRecord = new MyNonIdRecord("Hello, World!");
-
-var (insertResult, id) = await myRecordStore.Insert(myRecord, CancellationToken.None);
-var (insertResult2, id2) = await myRecordStore2.Insert(myOtherRecord, CancellationToken.None);
-insertResult.OnSuccess(x => Console.WriteLine("Success: {0} - {1}", x.Id == id, x.Id));
-insertResult2.OnSuccess(_ => { Console.WriteLine("Success: {0}", id2); });
-
-var ints = Enumerable.Range(1, 100).ToArray();
-foreach (var i in ints)
+var ids = Enumerable.Range(1, 100).ToArray();
+foreach (var i in ids)
 {
-    var record = new MyHasIdRecord(i, $"Hello, {i}");
+    var record = new MyRecord(i, $"Hello, {i}");
     var result = await myRecordStore.Save(i, record, CancellationToken.None);
     result.OnSuccess(x => Console.WriteLine("Success: {0}", x.Id));
     result.OnFailure(x => Console.WriteLine($"Failure: {x}"));
 }
 
-foreach (var i in ints)
+foreach (var i in ids)
 {
     var result = await myRecordStore.Get(i, CancellationToken.None);
+    if (result)
+        Console.WriteLine("Success: {0}", i);
 
-    result.OnSuccess(x => Console.WriteLine("Success: {0}", x.Id));
-    result.OnFailure(x => Console.WriteLine("Failure: {0}", x));
+    result.Select(x => x.Id).OnSuccess(x => Console.WriteLine("Success: {0}", x));
+
+    result.OnSuccess(item => Console.WriteLine("Success: {0}", item.Id));
+    result.OnFailure(ex => Console.WriteLine("Failure: {0}", ex.Message));
+
+    result.Resolve(
+        onSuccess: item => Console.WriteLine("Success: {0}", item.Id),
+        onFailure: ex => Console.WriteLine("Failure: {0}", ex.Message)
+    );
 }

@@ -3,14 +3,14 @@ namespace FusionZone.Abstractions;
 public static class StoreResult
 {
     public static StoreResult<T> Success<T>(T value) => new StoreResult<T>.Success(value);
-    public static StoreResult<T> Fail<T>(string error) => new StoreResult<T>.Fail(error);
+    public static StoreResult<T> Fail<T>(Exception error) => new StoreResult<T>.Fail(error);
 }
 
 public abstract record StoreResult<T>
 {
     public sealed record Success(T Value) : StoreResult<T>{}
 
-    public sealed record Fail(string Error) : StoreResult<T>;
+    public sealed record Fail(Exception Error) : StoreResult<T>;
 
     public static implicit operator bool(StoreResult<T> result)
         => result is Success;
@@ -76,20 +76,20 @@ public static class StoreResultExtensions
             onSuccess(success.Value);
     }
 
-    public static void OnFailure<T>(this StoreResult<T> result, Action<string> onFailure)
+    public static void OnFailure<T>(this StoreResult<T> result, Action<Exception> onFailure)
     {
         if (result is StoreResult<T>.Fail fail)
             onFailure(fail.Error);
     }
 
 
-    public static async Task OnFailure<T>(this StoreResult<T> result, Func<string, Task> onFailure)
+    public static async Task OnFailure<T>(this StoreResult<T> result, Func<Exception, Task> onFailure)
     {
         if (result is StoreResult<T>.Fail fail)
             await onFailure(fail.Error);
     }
 
-    public static void Resolve<T>(this StoreResult<T> result, Action<T> onSuccess, Action<string> onFailure)
+    public static void Resolve<T>(this StoreResult<T> result, Action<T> onSuccess, Action<Exception> onFailure)
     {
         switch (result)
         {
@@ -102,7 +102,7 @@ public static class StoreResultExtensions
         }
     }
 
-    public static async Task Resolve<T>(this StoreResult<T> result, Func<T, Task> onSuccess, Func<string, Task> onFailure)
+    public static async Task Resolve<T>(this StoreResult<T> result, Func<T, Task> onSuccess, Func<Exception, Task> onFailure)
     {
         switch (result)
         {

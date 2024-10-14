@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using FusionZone.Abstractions;
 using ZiggyCreatures.Caching.Fusion;
 

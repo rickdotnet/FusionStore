@@ -1,6 +1,7 @@
 namespace FusionZone.Abstractions;
 
-public interface IHaveId
+public interface IHaveId: IHaveId<long> { }
+public interface IHaveId<out TKey>
 {
-    public long Id { get; }
+    public TKey Id { get; }
 }

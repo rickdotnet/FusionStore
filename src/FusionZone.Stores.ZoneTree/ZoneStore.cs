@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Text.Json;
+﻿using System.Text.Json;
 using FusionZone.Abstractions;
 using IdGen;
 using Tenray.ZoneTree;
@@ -20,11 +19,11 @@ public class ZoneStore<T> : IDataStore<T>
     public ValueTask<StoreResult<T>> Get(long id, CancellationToken token)
     {
         if (!zoneTree.TryGet(id, out var json))
-            return ValueTask.FromResult(StoreResult.Fail<T>("Item not found"));
+            return ValueTask.FromResult(StoreResult.Fail<T>(new Exception("Item not found")));
 
         var value = JsonSerializer.Deserialize<T>(json);
         var result = value == null
-            ? StoreResult.Fail<T>("Item not found")
+            ? StoreResult.Fail<T>(new Exception("Item not found"))
             : StoreResult.Success(value);
 
         return ValueTask.FromResult(result);
@@ -47,7 +46,7 @@ public class ZoneStore<T> : IDataStore<T>
             if (result != null)
                 yield return StoreResult.Success(result);
             else
-                yield return StoreResult.Fail<T>("Item not found");
+                yield return StoreResult.Fail<T>(new Exception("Item not found"));
         }
     }
 
@@ -56,8 +55,8 @@ public class ZoneStore<T> : IDataStore<T>
         var id = data switch { IHaveId hasId => hasId.Id, _ => idGenerator.CreateId() };
         var getResult = await Get(id, token);
         if (getResult)
-            return (StoreResult.Fail<T>("Item already exists"), id);
-        
+            return (StoreResult.Fail<T>(new Exception("Item already exists")), id);
+
         var result = await Save(id, data, token);
         return (result, id);
     }
