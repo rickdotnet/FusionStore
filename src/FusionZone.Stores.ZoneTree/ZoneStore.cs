@@ -5,63 +5,63 @@ using Tenray.ZoneTree;
 
 namespace FusionZone.Stores.ZoneTree;
 
-public class ZoneStore<T> : IDataStore<T>
+public class ZoneStore<TKey> : IDataStore<TKey>
 {
-    private readonly IZoneTree<long, string> zoneTree;
-    private readonly IIdGenerator<long> idGenerator;
+    private readonly IZoneTree<TKey, string> zoneTree;
+    private readonly IIdGenerator<TKey> idGenerator;
 
-    public ZoneStore(IZoneTree<long, string> zoneTree, IIdGenerator<long> idGenerator)
+    public ZoneStore(IZoneTree<TKey, string> zoneTree, IIdGenerator<TKey> idGenerator)
     {
         this.zoneTree = zoneTree;
         this.idGenerator = idGenerator;
     }
 
-    public ValueTask<StoreResult<T>> Get(long id, CancellationToken token)
+    public ValueTask<StoreResult<TData>> Get<TData>(TKey id, CancellationToken token)
     {
         if (!zoneTree.TryGet(id, out var json))
-            return ValueTask.FromResult(StoreResult.Fail<T>(new Exception("Item not found")));
+            return ValueTask.FromResult(StoreResult.Fail<TData>(new Exception("Item not found")));
 
-        var value = JsonSerializer.Deserialize<T>(json);
+        var value = JsonSerializer.Deserialize<TData>(json);
         var result = value == null
-            ? StoreResult.Fail<T>(new Exception("Item not found"))
+            ? StoreResult.Fail<TData>(new Exception("Item not found"))
             : StoreResult.Success(value);
 
         return ValueTask.FromResult(result);
     }
 
-    public ValueTask<IEnumerable<StoreResult<T>>> Get(long[] ids, CancellationToken token)
+    public ValueTask<IEnumerable<StoreResult<TData>>> Get<TData>(TKey[] ids, CancellationToken token)
     {
-        var results = GetManyInternal(ids);
+        var results = GetManyInternal<TData>(ids);
         return ValueTask.FromResult(results);
     }
 
-    private IEnumerable<StoreResult<T>> GetManyInternal(IEnumerable<long> ids)
+    private IEnumerable<StoreResult<TData>> GetManyInternal<TData>(IEnumerable<TKey> ids)
     {
         foreach (var id in ids)
         {
             if (!zoneTree.TryGet(id, out var json)) continue;
 
-            var result = JsonSerializer.Deserialize<T>(json);
+            var result = JsonSerializer.Deserialize<TData>(json);
 
             if (result != null)
                 yield return StoreResult.Success(result);
             else
-                yield return StoreResult.Fail<T>(new Exception("Item not found"));
+                yield return StoreResult.Fail<TData>(new Exception("Item not found"));
         }
     }
 
-    public async ValueTask<(StoreResult<T> result, long id)> Insert(T data, CancellationToken token)
+    public async ValueTask<(StoreResult<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token)
     {
-        var id = data switch { IHaveId hasId => hasId.Id, _ => idGenerator.CreateId() };
-        var getResult = await Get(id, token);
+        var id = data switch { IHaveId<TKey> hasId => hasId.Id, _ => idGenerator.CreateId() };
+        var getResult = await Get<TData>(id, token);
         if (getResult)
-            return (StoreResult.Fail<T>(new Exception("Item already exists")), id);
+            return (StoreResult.Fail<TData>(new Exception("Item already exists")), id);
 
-        var result = await Save(id, data, token);
+        var result = await Save<TData>(id, data, token);
         return (result, id);
     }
 
-    public ValueTask<StoreResult<T>> Save(long id, T data, CancellationToken token)
+    public ValueTask<StoreResult<TData>> Save<TData>(TKey id, TData data, CancellationToken token)
     {
         var json = JsonSerializer.Serialize(data);
         zoneTree.Upsert(id, json);
@@ -69,9 +69,9 @@ public class ZoneStore<T> : IDataStore<T>
         return ValueTask.FromResult(StoreResult.Success(data));
     }
 
-    public async ValueTask<StoreResult<T>> Delete(long id, CancellationToken token)
+    public async ValueTask<StoreResult<TData>> Delete<TData>(TKey id, CancellationToken token)
     {
-        var itemToDelete = await Get(id, token);
+        var itemToDelete = await Get<TData>(id, token);
         var result = itemToDelete.Select(x =>
         {
             zoneTree.TryDelete(id, out var _);

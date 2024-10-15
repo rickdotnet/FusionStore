@@ -3,26 +3,26 @@ using ZiggyCreatures.Caching.Fusion;
 
 namespace FusionZone;
 
-public class FusionStore<T> : IDataStore<T>
+public class FusionStore<TKey> : IDataStore<TKey>
 {
-    private readonly string cacheName = $"FusionStore-{typeof(T).FullName}";
-    private readonly IDataStore<T> innerStore;
+    private readonly string cacheName = $"FusionStore-{typeof(TKey).FullName}";
+    private readonly IDataStore<TKey> innerStore;
     private readonly IFusionCache cache;
 
-    public FusionStore(IDataStore<T> innerStore, IFusionCache cache)
+    public FusionStore(IDataStore<TKey> innerStore, IFusionCache cache)
     {
         this.innerStore = innerStore;
         this.cache = cache;
     }
 
-    public async ValueTask<StoreResult<T>> Get(long id, CancellationToken token)
+    public async ValueTask<StoreResult<TData>> Get<TData>(TKey id, CancellationToken token)
     {
         var key = GetCacheKey(id);
-        var cacheHit = await cache.TryGetAsync<T>(key, token: token);
+        var cacheHit = await cache.TryGetAsync<TData>(key, token: token);
         if (cacheHit.HasValue)
             return StoreResult.Success(cacheHit.Value);
 
-        var storeResult = await innerStore.Get(id, token);
+        var storeResult = await innerStore.Get<TData>(id, token);
         return await storeResult.Select(async x =>
         {
             await cache.SetAsync(key, x, token: token);
@@ -30,7 +30,7 @@ public class FusionStore<T> : IDataStore<T>
         });
     }
 
-    public async ValueTask<(StoreResult<T> result, long id)> Insert(T data, CancellationToken token)
+    public async ValueTask<(StoreResult<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token)
     {
         var (insertResult, id) = await innerStore.Insert(data, token);
         var result = await insertResult.Select(async x =>
@@ -43,7 +43,7 @@ public class FusionStore<T> : IDataStore<T>
         return (result, id);
     }
 
-    public async ValueTask<StoreResult<T>> Save(long id, T data, CancellationToken token)
+    public async ValueTask<StoreResult<TData>> Save<TData>(TKey id, TData data, CancellationToken token)
     {
         var saveResult = await innerStore.Save(id, data, token);
         var result = await saveResult.Select(async x =>
@@ -56,9 +56,9 @@ public class FusionStore<T> : IDataStore<T>
         return result;
     }
 
-    public async ValueTask<StoreResult<T>> Delete(long id, CancellationToken token)
+    public async ValueTask<StoreResult<TData>> Delete<TData>(TKey id, CancellationToken token)
     {
-        var deleteResult = await innerStore.Delete(id, token);
+        var deleteResult = await innerStore.Delete<TData>(id, token);
         var result = await deleteResult.Select(async x =>
         {
             var key = GetCacheKey(id);
@@ -69,5 +69,5 @@ public class FusionStore<T> : IDataStore<T>
         return result;
     }
 
-    private string GetCacheKey(long id) => $"{cacheName}-{id}";
+    private string GetCacheKey(TKey id) => $"{cacheName}-{id}";
 }

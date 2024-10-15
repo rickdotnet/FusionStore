@@ -20,8 +20,8 @@ var zoneTree = new ZoneTreeFactory<long, string>()
     .OpenOrCreate();
 
 var fusionCache = new FusionCache(new FusionCacheOptions());
-var zoneStore = new ZoneStore<MyRecord>(zoneTree, new IdGenerator(0));
-var myRecordStore = new FusionStore<MyRecord>(zoneStore, fusionCache);
+var zoneStore = new ZoneStore<long>(zoneTree, new IdGenerator(0));
+var myRecordStore = new FusionStore<long>(zoneStore, fusionCache);
 
 var ids = Enumerable.Range(1, 100).ToArray();
 foreach (var i in ids)
@@ -34,7 +34,7 @@ foreach (var i in ids)
 
 foreach (var i in ids)
 {
-    var result = await myRecordStore.Get(i, CancellationToken.None);
+    var result = await myRecordStore.Get<MyRecord>(i, CancellationToken.None);
     if (result)
         Console.WriteLine("Success: {0}", i);
 
