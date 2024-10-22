@@ -3,6 +3,7 @@ using FusionZone;
 using FusionZone.Abstractions;
 using FusionZone.Stores.ZoneTree;
 using IdGen;
+using RickDotNet.Extensions.Base;
 using Tenray.ZoneTree;
 using Tenray.ZoneTree.Comparers;
 using Tenray.ZoneTree.Serializers;
@@ -38,13 +39,14 @@ foreach (var i in ids)
     if (result)
         Console.WriteLine("Success: {0}", i);
 
-    result.Select(x => x.Id).OnSuccess(x => Console.WriteLine("Success: {0}", x));
+    Console.WriteLine("Success: {0}", result.Select(x => x.Id));
 
     result.OnSuccess(item => Console.WriteLine("Success: {0}", item.Id));
     result.OnFailure(ex => Console.WriteLine("Failure: {0}", ex.Message));
 
     result.Resolve(
         onSuccess: item => Console.WriteLine("Success: {0}", item.Id),
-        onFailure: ex => Console.WriteLine("Failure: {0}", ex.Message)
+        onFailure: error => Console.WriteLine("Failure: {0}", error),
+        onException: ex => Console.WriteLine("Failure: {0}", ex.Message)
     );
 }

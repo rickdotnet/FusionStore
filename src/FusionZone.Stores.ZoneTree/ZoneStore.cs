@@ -1,6 +1,8 @@
 ﻿using System.Text.Json;
 using FusionZone.Abstractions;
 using IdGen;
+using RickDotNet.Base;
+using RickDotNet.Extensions.Base;
 using Tenray.ZoneTree;
 
 namespace FusionZone.Stores.ZoneTree;
@@ -16,26 +18,26 @@ public class ZoneStore<TKey> : IDataStore<TKey>
         this.idGenerator = idGenerator;
     }
 
-    public ValueTask<StoreResult<TData>> Get<TData>(TKey id, CancellationToken token)
+    public ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token)
     {
         if (!zoneTree.TryGet(id, out var json))
-            return ValueTask.FromResult(StoreResult.Fail<TData>(new Exception("Item not found")));
+            return ValueTask.FromResult(Result.Failure<TData>(new Exception("Item not found")));
 
         var value = JsonSerializer.Deserialize<TData>(json);
         var result = value == null
-            ? StoreResult.Fail<TData>(new Exception("Item not found"))
-            : StoreResult.Success(value);
+            ? Result.Failure<TData>(new Exception("Item not found"))
+            : Result.Success(value);
 
         return ValueTask.FromResult(result);
     }
 
-    public ValueTask<IEnumerable<StoreResult<TData>>> Get<TData>(TKey[] ids, CancellationToken token)
+    public ValueTask<IEnumerable<Result<TData>>> Get<TData>(TKey[] ids, CancellationToken token)
     {
         var results = GetManyInternal<TData>(ids);
         return ValueTask.FromResult(results);
     }
 
-    private IEnumerable<StoreResult<TData>> GetManyInternal<TData>(IEnumerable<TKey> ids)
+    private IEnumerable<Result<TData>> GetManyInternal<TData>(IEnumerable<TKey> ids)
     {
         foreach (var id in ids)
         {
@@ -44,32 +46,32 @@ public class ZoneStore<TKey> : IDataStore<TKey>
             var result = JsonSerializer.Deserialize<TData>(json);
 
             if (result != null)
-                yield return StoreResult.Success(result);
+                yield return Result.Success(result);
             else
-                yield return StoreResult.Fail<TData>(new Exception("Item not found"));
+                yield return Result.Failure<TData>(new Exception("Item not found"));
         }
     }
 
-    public async ValueTask<(StoreResult<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token)
+    public async ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token)
     {
         var id = data switch { IHaveId<TKey> hasId => hasId.Id, _ => idGenerator.CreateId() };
         var getResult = await Get<TData>(id, token);
         if (getResult)
-            return (StoreResult.Fail<TData>(new Exception("Item already exists")), id);
+            return (Result.Failure<TData>(new Exception("Item already exists")), id);
 
         var result = await Save<TData>(id, data, token);
         return (result, id);
     }
 
-    public ValueTask<StoreResult<TData>> Save<TData>(TKey id, TData data, CancellationToken token)
+    public ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token)
     {
         var json = JsonSerializer.Serialize(data);
         zoneTree.Upsert(id, json);
 
-        return ValueTask.FromResult(StoreResult.Success(data));
+        return ValueTask.FromResult(Result.Success(data));
     }
 
-    public async ValueTask<StoreResult<TData>> Delete<TData>(TKey id, CancellationToken token)
+    public async ValueTask<Result<TData>> Delete<TData>(TKey id, CancellationToken token)
     {
         var itemToDelete = await Get<TData>(id, token);
         var result = itemToDelete.Select(x =>
