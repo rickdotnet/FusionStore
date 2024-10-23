@@ -1,5 +1,4 @@
-﻿using Docfx.Dotnet;
-using static SimpleExec.Command;
+﻿using static SimpleExec.Command;
 
 namespace build;
 

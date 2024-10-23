@@ -1,6 +1,5 @@
 ﻿using ConsoleDemo;
 using FusionZone;
-using FusionZone.Abstractions;
 using FusionZone.Stores.ZoneTree;
 using IdGen;
 using RickDotNet.Extensions.Base;
@@ -13,16 +12,19 @@ const string dataPath = "C:\\Temp\\FusionZone\\ConsoleDemo\\Data";
 if (!Directory.Exists(dataPath))
     Directory.CreateDirectory(dataPath);
 
-var zoneTree = new ZoneTreeFactory<long, string>()
-    .SetComparer(new Int64ComparerAscending())
-    .SetDataDirectory(dataPath)
-    .SetKeySerializer(new Int64Serializer())
-    .SetValueSerializer(new Utf8StringSerializer())
-    .OpenOrCreate();
+var config = new ZoneStoreConfig
+{
+    StoreName = "MyRecord",
+    DataPath = dataPath
+};
 
 var fusionCache = new FusionCache(new FusionCacheOptions());
-var zoneStore = new ZoneStore<long>(zoneTree, new IdGenerator(0));
+var zoneStore = new ZoneStore<long>(config, new IdGenerator(0));
 var myRecordStore = new FusionStore<long>(zoneStore, fusionCache);
+
+var criteria = FilterCriteria.For<MyRecord>(x => x.Id % 2 == 0).Take(20);
+//var items = await myRecordStore.List(criteria, CancellationToken.None);
+//var count = items.ValueOrDefault()?.Count() ?? 0;
 
 var ids = Enumerable.Range(1, 100).ToArray();
 foreach (var i in ids)
@@ -43,7 +45,7 @@ foreach (var i in ids)
 
     // success
     result.OnSuccess(item => Console.WriteLine("Success: {0}", item.Id));
-    
+
     // failure or exceptional failure
     result.OnError(error => Console.WriteLine("Failure: {0}", error));
 

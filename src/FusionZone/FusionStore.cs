@@ -5,7 +5,7 @@ using ZiggyCreatures.Caching.Fusion;
 
 namespace FusionZone;
 
-public class FusionStore<TKey> : IDataStore<TKey>
+public class FusionStore<TKey> : DataStore<TKey>
 {
     private readonly string cacheName = $"FusionStore-{typeof(TKey).FullName}";
     private readonly IDataStore<TKey> innerStore;
@@ -17,7 +17,9 @@ public class FusionStore<TKey> : IDataStore<TKey>
         this.cache = cache;
     }
 
-    public async ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token)
+    private string GetCacheKey(TKey id) => $"{cacheName}-{id}";
+    
+    public override async ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token)
     {
         var key = GetCacheKey(id);
         var cacheHit = await cache.TryGetAsync<TData>(key, token: token);
@@ -32,7 +34,7 @@ public class FusionStore<TKey> : IDataStore<TKey>
         });
     }
 
-    public async ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token)
+    public override async ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token)
     {
         var (insertResult, id) = await innerStore.Insert(data, token);
         var result = await insertResult.SelectAsync(async x =>
@@ -45,7 +47,7 @@ public class FusionStore<TKey> : IDataStore<TKey>
         return (result, id);
     }
 
-    public async ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token)
+    public override async ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token)
     {
         var saveResult = await innerStore.Save(id, data, token);
         var result = await saveResult.SelectAsync(async x =>
@@ -58,7 +60,7 @@ public class FusionStore<TKey> : IDataStore<TKey>
         return result;
     }
 
-    public async ValueTask<Result<TData>> Delete<TData>(TKey id, CancellationToken token)
+    public override async ValueTask<Result<TData>> Delete<TData>(TKey id, CancellationToken token)
     {
         var deleteResult = await innerStore.Delete<TData>(id, token);
         var result = await deleteResult.SelectAsync(async x =>
@@ -71,5 +73,15 @@ public class FusionStore<TKey> : IDataStore<TKey>
         return result;
     }
 
-    private string GetCacheKey(TKey id) => $"{cacheName}-{id}";
+    public override ValueTask<Result<IEnumerable<TData>>> List<TData>(FilterCriteria<TData> filterCriteria, CancellationToken token = default)
+    {
+        // TODO: decide if we want to cache this
+        return innerStore.List(filterCriteria, token);
+    }
+
+    protected override Task<IEnumerable<TKey>> GetAllIdsAsync<TData>(CancellationToken token)
+    {
+        // won't be called, we override List
+        throw new NotImplementedException();
+    }
 }

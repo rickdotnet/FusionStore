@@ -4,21 +4,26 @@ using IdGen;
 using RickDotNet.Base;
 using RickDotNet.Extensions.Base;
 using Tenray.ZoneTree;
+using Tenray.ZoneTree.Comparers;
+using Tenray.ZoneTree.Serializers;
 
 namespace FusionZone.Stores.ZoneTree;
 
-public class ZoneStore<TKey> : IDataStore<TKey>
+public class ZoneStore<TKey> : DataStore<TKey>
 {
     private readonly IZoneTree<TKey, string> zoneTree;
+    private readonly ZoneIndex zoneIndex;
     private readonly IIdGenerator<TKey> idGenerator;
 
-    public ZoneStore(IZoneTree<TKey, string> zoneTree, IIdGenerator<TKey> idGenerator)
+    public ZoneStore(ZoneStoreConfig storeConfig, IIdGenerator<TKey> idGenerator)
     {
-        this.zoneTree = zoneTree;
         this.idGenerator = idGenerator;
+        
+        zoneTree = ZoneTreeFactory.Create<TKey>(storeConfig);
+        zoneIndex = new ZoneIndex(storeConfig);
     }
 
-    public ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token)
+    public override ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token)
     {
         if (!zoneTree.TryGet(id, out var json))
             return ValueTask.FromResult(Result.Failure<TData>(new Exception("Item not found")));
@@ -39,6 +44,7 @@ public class ZoneStore<TKey> : IDataStore<TKey>
 
     private IEnumerable<Result<TData>> GetManyInternal<TData>(IEnumerable<TKey> ids)
     {
+        //zoneTree.
         foreach (var id in ids)
         {
             if (!zoneTree.TryGet(id, out var json)) continue;
@@ -52,7 +58,7 @@ public class ZoneStore<TKey> : IDataStore<TKey>
         }
     }
 
-    public async ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token)
+    public override async ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token)
     {
         var id = data switch { IHaveId<TKey> hasId => hasId.Id, _ => idGenerator.CreateId() };
         var getResult = await Get<TData>(id, token);
@@ -63,7 +69,7 @@ public class ZoneStore<TKey> : IDataStore<TKey>
         return (result, id);
     }
 
-    public ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token)
+    public override ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token)
     {
         var json = JsonSerializer.Serialize(data);
         zoneTree.Upsert(id, json);
@@ -71,15 +77,21 @@ public class ZoneStore<TKey> : IDataStore<TKey>
         return ValueTask.FromResult(Result.Success(data));
     }
 
-    public async ValueTask<Result<TData>> Delete<TData>(TKey id, CancellationToken token)
+    public override async ValueTask<Result<TData>> Delete<TData>(TKey id, CancellationToken token)
     {
         var itemToDelete = await Get<TData>(id, token);
         var result = itemToDelete.Select(x =>
         {
-            zoneTree.TryDelete(id, out var _);
+            zoneTree.TryDelete(id, out _);
             return x;
         });
 
         return result;
+    }
+
+    protected override Task<IEnumerable<TKey>> GetAllIdsAsync<TData>(CancellationToken token)
+    {
+        // determine strategy for this
+        throw new NotImplementedException();
     }
 }
