@@ -41,12 +41,19 @@ foreach (var i in ids)
 
     Console.WriteLine("Success: {0}", result.Select(x => x.Id));
 
+    // success
     result.OnSuccess(item => Console.WriteLine("Success: {0}", item.Id));
-    result.OnFailure(ex => Console.WriteLine("Failure: {0}", ex.Message));
+    
+    // failure or exceptional failure
+    result.OnError(error => Console.WriteLine("Failure: {0}", error));
 
+    // success, failure, or exceptional failure
     result.Resolve(
         onSuccess: item => Console.WriteLine("Success: {0}", item.Id),
         onFailure: error => Console.WriteLine("Failure: {0}", error),
         onException: ex => Console.WriteLine("Failure: {0}", ex.Message)
     );
+
+    // down and dirty
+    Console.WriteLine("Value: {0}", result.ValueOrDefault()?.Id);
 }
