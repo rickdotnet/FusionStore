@@ -12,7 +12,7 @@ namespace FusionZone.Stores.ZoneTree;
 public class ZoneStore<TKey> : DataStore<TKey>
 {
     private readonly IZoneTree<TKey, string> zoneTree;
-    private readonly ZoneIndex zoneIndex;
+    private readonly ZoneIndex<TKey> zoneIndex;
     private readonly IIdGenerator<TKey> idGenerator;
 
     public ZoneStore(ZoneStoreConfig storeConfig, IIdGenerator<TKey> idGenerator)
@@ -20,7 +20,7 @@ public class ZoneStore<TKey> : DataStore<TKey>
         this.idGenerator = idGenerator;
         
         zoneTree = ZoneTreeFactory.Create<TKey>(storeConfig);
-        zoneIndex = new ZoneIndex(storeConfig);
+        zoneIndex = ZoneIndex.Create<TKey>(storeConfig);
     }
 
     public override ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token)
@@ -89,9 +89,9 @@ public class ZoneStore<TKey> : DataStore<TKey>
         return result;
     }
 
-    protected override Task<IEnumerable<TKey>> GetAllIdsAsync<TData>(CancellationToken token)
+    protected override ValueTask<IEnumerable<TKey>> GetAllIds<TData>(CancellationToken token)
     {
         // determine strategy for this
-        throw new NotImplementedException();
+        return ValueTask.FromResult(zoneIndex.GetAllIds<TData>(token));
     }
 }

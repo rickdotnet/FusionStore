@@ -15,7 +15,7 @@ public abstract class DataStore<TKey>: IDataStore<TKey>
         FilterCriteria<TData>? filterCriteria = null,
         CancellationToken token = default)
     {
-        var ids = await GetAllIdsAsync<TData>(token);
+        var ids = await GetAllIds<TData>(token);
         var results = new List<TData>();
         filterCriteria ??= FilterCriteria.For<TData>();
         var compiledFilter = filterCriteria.Filter?.Compile(); // TODO: cache this
@@ -55,5 +55,5 @@ public abstract class DataStore<TKey>: IDataStore<TKey>
         return Result.Success(results.AsEnumerable());
     }
     
-    protected abstract Task<IEnumerable<TKey>> GetAllIdsAsync<TData>(CancellationToken token);
+    protected abstract ValueTask<IEnumerable<TKey>> GetAllIds<TData>(CancellationToken token);
 }

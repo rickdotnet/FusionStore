@@ -79,7 +79,7 @@ public class FusionStore<TKey> : DataStore<TKey>
         return innerStore.List(filterCriteria, token);
     }
 
-    protected override Task<IEnumerable<TKey>> GetAllIdsAsync<TData>(CancellationToken token)
+    protected override ValueTask<IEnumerable<TKey>> GetAllIds<TData>(CancellationToken token)
     {
         // won't be called, we override List
         throw new NotImplementedException();
