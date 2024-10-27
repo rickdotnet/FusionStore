@@ -2,6 +2,6 @@
 
 public record ZoneStoreConfig
 {
-    public required string StoreName { get; init; }
+    public string StoreName { get; set; } = "ZoneStore";
     public required string DataPath { get; init; }
 }

@@ -15,7 +15,7 @@ internal class ZoneIndex<TKey>
     public ZoneIndex(ZoneStoreConfig storeConfig)
     {
         var indexConfig = storeConfig with { StoreName = $"{storeConfig.StoreName}-Index" };
-        indexStore = FuzionZoneTreeFactory.Create<string, HashSet<TKey>>(indexConfig);
+        indexStore = FusionZoneTreeFactory.Create<string, HashSet<TKey>>(indexConfig);
     }
 
     private string GetIndexKey<TData>() => typeof(TData).FullName!;

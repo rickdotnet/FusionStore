@@ -17,7 +17,7 @@ public class ZoneStore<TKey> : DataStore<TKey>
     {
         this.idGenerator = idGenerator;
 
-        zoneTree = FuzionZoneTreeFactory.Create<TKey>(storeConfig);
+        zoneTree = FusionZoneTreeFactory.Create<TKey>(storeConfig);
         zoneIndex = ZoneIndex.Create<TKey>(storeConfig);
     }
 

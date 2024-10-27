@@ -4,7 +4,7 @@ namespace FusionStore;
 
 public record FusionStoreConfig
 {
-    public required string StoreName { get; init; }
+    public string StoreName { get; init; } = "FusionStore";
     public bool SkipCache { get; set; }
     public FusionCacheEntryOptions? DefaultFusionCacheEntryOptions { get; set; }
 }

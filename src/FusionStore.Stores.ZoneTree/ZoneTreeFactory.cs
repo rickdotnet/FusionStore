@@ -3,7 +3,7 @@ using Tenray.ZoneTree;
 
 namespace FusionStore.Stores.ZoneTree;
 
-public class FuzionZoneTreeFactory
+public class FusionZoneTreeFactory
 {
     internal static IZoneTree<TKey, TypedDeletable> Create<TKey>(ZoneStoreConfig storeConfig)
     {
