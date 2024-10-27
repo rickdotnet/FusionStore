@@ -1,4 +1,4 @@
-﻿namespace FusionZone.Stores.ZoneTree;
+﻿namespace FusionStore.Stores.ZoneTree;
 
 public record ZoneStoreConfig
 {

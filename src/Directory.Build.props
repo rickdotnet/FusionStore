@@ -3,7 +3,7 @@
 	<PropertyGroup Label="Package">
 		<PackageIcon>image.jpg</PackageIcon>
 		<Authors>RickDotNet</Authors>
-		<RepositoryUrl>https://github.com/rickdotnet/FusionZone</RepositoryUrl>
+		<RepositoryUrl>https://github.com/rickdotnet/FusionStore</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>

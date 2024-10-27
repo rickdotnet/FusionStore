@@ -3,10 +3,10 @@
 public class BuildConfiguration
 {
     public string RootDirectory { get; }
-    public string SolutionFile => Path.Combine(RootDirectory, "src", "FusionZone.sln");
+    public string SolutionFile => Path.Combine(RootDirectory, "src", "FusionStore.sln");
     public string PackOutput => Path.Combine(RootDirectory, "dist");
     public string TestSearchPattern => Path.Combine(".", "tests", "*");
-    public string ProjectsSearchPattern => "FusionZone*.csproj";
+    public string ProjectsSearchPattern => "FusionStore*.csproj";
     
     public string[] TestDirectories => Directory.GetDirectories(RootDirectory, TestSearchPattern, SearchOption.TopDirectoryOnly);
     public string[] ProjectFiles => Directory.GetFiles(Path.Combine(RootDirectory, "src"), ProjectsSearchPattern, SearchOption.AllDirectories);

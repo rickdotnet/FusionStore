@@ -1,4 +1,4 @@
-﻿using FusionZone.Abstractions;
+﻿using FusionStore.Abstractions;
 
 namespace ConsoleDemo;
 

@@ -1,6 +1,6 @@
-namespace FusionZone.Tests;
+namespace FusionStore.Tests;
 
-public class FusionZoneTests
+public class FusionStoreTests
 {
     [Fact]
     public void Down_With_TDD()

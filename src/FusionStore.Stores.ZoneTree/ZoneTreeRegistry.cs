@@ -4,7 +4,7 @@ using Tenray.ZoneTree.Comparers;
 using Tenray.ZoneTree.PresetTypes;
 using Tenray.ZoneTree.Serializers;
 
-namespace FusionZone.Stores.ZoneTree;
+namespace FusionStore.Stores.ZoneTree;
 
 public class ZoneTreeRegistry
 {

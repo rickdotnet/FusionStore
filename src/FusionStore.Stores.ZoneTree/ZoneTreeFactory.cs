@@ -1,7 +1,7 @@
-using FusionZone.Stores.ZoneTree.Internal;
+using FusionStore.Stores.ZoneTree.Internal;
 using Tenray.ZoneTree;
 
-namespace FusionZone.Stores.ZoneTree;
+namespace FusionStore.Stores.ZoneTree;
 
 public class FuzionZoneTreeFactory
 {

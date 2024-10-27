@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Tenray.ZoneTree.Serializers;
 
-namespace FusionZone.Stores.ZoneTree.Internal;
+namespace FusionStore.Stores.ZoneTree.Internal;
 
 [StructLayout(LayoutKind.Sequential)]
 internal struct TypedDeletable

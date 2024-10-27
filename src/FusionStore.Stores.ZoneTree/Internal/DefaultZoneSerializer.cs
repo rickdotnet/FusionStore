@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Tenray.ZoneTree.Serializers;
 
-namespace FusionZone.Stores.ZoneTree.Internal;
+namespace FusionStore.Stores.ZoneTree.Internal;
 
 public interface IZoneSerializer<TData> : ISerializer<TData>;
 

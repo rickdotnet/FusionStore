@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FusionZone", "FusionZone\FusionZone.csproj", "{B4380414-A79F-4D75-A2DB-05E3D7B7AAE0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FusionStore", "FusionStore\FusionStore.csproj", "{B4380414-A79F-4D75-A2DB-05E3D7B7AAE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FusionZone.Stores.ZoneTree", "FusionZone.Stores.ZoneTree\FusionZone.Stores.ZoneTree.csproj", "{049EBB3F-1496-4EA0-86BF-1CBE555525C3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FusionStore.Stores.ZoneTree", "FusionStore.Stores.ZoneTree\FusionStore.Stores.ZoneTree.csproj", "{049EBB3F-1496-4EA0-86BF-1CBE555525C3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5209CE34-C090-4C4D-9227-F5630A7C1F8C}"
 EndProject
@@ -16,7 +16,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "build", "..\build\build.csp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E2805F7A-9B12-489B-9E07-EA9F1693FF9B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FusionZone.Tests", "..\tests\FusionZone.Tests\FusionZone.Tests.csproj", "{848C9522-7AD2-437C-9F43-EC2FE2030333}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FusionStore.Tests", "..\tests\FusionStore.Tests\FusionStore.Tests.csproj", "{848C9522-7AD2-437C-9F43-EC2FE2030333}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

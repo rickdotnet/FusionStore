@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace FusionZone;
+namespace FusionStore;
 
 public abstract class FilterCriteria
 {

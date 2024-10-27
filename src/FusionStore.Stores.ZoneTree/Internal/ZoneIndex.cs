@@ -1,7 +1,7 @@
 using RickDotNet.Base;
 using Tenray.ZoneTree;
 
-namespace FusionZone.Stores.ZoneTree.Internal;
+namespace FusionStore.Stores.ZoneTree.Internal;
 
 internal abstract class ZoneIndex
 {

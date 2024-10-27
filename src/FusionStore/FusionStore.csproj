@@ -7,15 +7,13 @@
     </PropertyGroup>
 
     <PropertyGroup Label="Package">
-        <PackageId>RickDotNet.FusionZone.Stores.ZoneTree</PackageId>
+        <PackageId>RickDotNet.FusionStore</PackageId>
     </PropertyGroup>
     
     <ItemGroup>
-      <ProjectReference Include="..\FusionZone\FusionZone.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="ZoneTree" Version="1.8.3" />
+      <PackageReference Include="IdGen" Version="3.0.7" />
+      <PackageReference Include="RickDotNet.Base" Version="1.0.3" />
+      <PackageReference Include="ZiggyCreatures.FusionCache" Version="1.4.0" />
     </ItemGroup>
 
 </Project>

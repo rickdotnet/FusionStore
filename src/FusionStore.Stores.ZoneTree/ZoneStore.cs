@@ -1,11 +1,11 @@
-﻿using FusionZone.Abstractions;
-using FusionZone.Stores.ZoneTree.Internal;
+﻿using FusionStore.Abstractions;
+using FusionStore.Stores.ZoneTree.Internal;
 using IdGen;
 using RickDotNet.Base;
 using RickDotNet.Extensions.Base;
 using Tenray.ZoneTree;
 
-namespace FusionZone.Stores.ZoneTree;
+namespace FusionStore.Stores.ZoneTree;
 
 public class ZoneStore<TKey> : DataStore<TKey>
 {

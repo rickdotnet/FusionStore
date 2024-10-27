@@ -1,13 +1,13 @@
 ﻿using ConsoleDemo;
-using FusionZone;
-using FusionZone.Stores.ZoneTree;
+using FusionStore;
+using FusionStore.Stores.ZoneTree;
 using IdGen;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using RickDotNet.Extensions.Base;
 using ZiggyCreatures.Caching.Fusion;
 
-const string dataPath = "/tmp/FusionZone//ConsoleDemo/Data";
+const string dataPath = "/tmp/FusionStore//ConsoleDemo/Data";
 if (!Directory.Exists(dataPath))
     Directory.CreateDirectory(dataPath);
 

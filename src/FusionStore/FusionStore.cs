@@ -1,11 +1,12 @@
-using FusionZone.Abstractions;
+using FusionStore.Abstractions;
 using RickDotNet.Base;
 using RickDotNet.Extensions.Base;
 using ZiggyCreatures.Caching.Fusion;
 
-namespace FusionZone;
+namespace FusionStore;
 
-public class FusionStore<TKey> : DataStore<TKey>
+public interface IFusionStore<TKey> : IDataStore<TKey>;
+public class FusionStore<TKey> : DataStore<TKey>, IFusionStore<TKey>
 {
     private readonly string cacheName;
     private readonly IDataStore<TKey> innerStore;

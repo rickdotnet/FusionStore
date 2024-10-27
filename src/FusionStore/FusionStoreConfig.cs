@@ -1,6 +1,6 @@
 using ZiggyCreatures.Caching.Fusion;
 
-namespace FusionZone;
+namespace FusionStore;
 
 public record FusionStoreConfig
 {

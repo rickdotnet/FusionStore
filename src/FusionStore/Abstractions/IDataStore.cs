@@ -1,6 +1,6 @@
 using RickDotNet.Base;
 
-namespace FusionZone.Abstractions;
+namespace FusionStore.Abstractions;
 
 public interface IDataStore<TKey> 
 {

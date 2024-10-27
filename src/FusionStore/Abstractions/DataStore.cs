@@ -1,9 +1,9 @@
 using RickDotNet.Base;
 using RickDotNet.Extensions.Base;
 
-namespace FusionZone.Abstractions;
+namespace FusionStore.Abstractions;
 
-public abstract class DataStore<TKey>: IDataStore<TKey>
+public abstract class DataStore<TKey> : IDataStore<TKey>
 {
     public abstract ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token = default);
     public abstract ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token = default);
@@ -19,16 +19,16 @@ public abstract class DataStore<TKey>: IDataStore<TKey>
         var results = new List<TData>();
         filterCriteria ??= FilterCriteria.For<TData>();
         var compiledFilter = filterCriteria.Filter?.Compile(); // TODO: cache this
-        
+
         var skipped = 0;
         var taken = 0;
         foreach (var id in ids)
         {
             var result = await Get<TData>(id, token);
             if (!result) continue; // skip if not found, for now
-            
+
             var item = result.ValueOrDefault()!;
-            
+
             // no filter, or filter passes
             if (compiledFilter == null || compiledFilter(item))
             {
@@ -54,6 +54,6 @@ public abstract class DataStore<TKey>: IDataStore<TKey>
 
         return Result.Success(results.AsEnumerable());
     }
-    
+
     protected abstract ValueTask<IEnumerable<TKey>> GetAllIds<TData>(CancellationToken token);
 }
