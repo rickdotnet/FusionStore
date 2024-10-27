@@ -1,40 +1,31 @@
+using FusionZone.Stores.ZoneTree.Internal;
 using Tenray.ZoneTree;
-using Tenray.ZoneTree.Comparers;
-using Tenray.ZoneTree.Serializers;
 
 namespace FusionZone.Stores.ZoneTree;
 
-public class ZoneTreeFactory
+public class FuzionZoneTreeFactory
 {
-    public static IZoneTree<TKey, string> Create<TKey>(ZoneStoreConfig storeConfig)
-        => Create<TKey, string>(storeConfig);
-
-    public static IZoneTree<TKey, TValue> Create<TKey, TValue>(ZoneStoreConfig storeConfig)
+    internal static IZoneTree<TKey, TypedDeletable> Create<TKey>(ZoneStoreConfig storeConfig)
     {
-        // need to figure out how to get comparer and serializer from the type
-
         var dataDirectory = Path.Combine(storeConfig.DataPath, storeConfig.StoreName);
-        return new ZoneTreeFactory<TKey, TValue>()
-            .SetComparer(GetComparer<TKey>())
+        return new ZoneTreeFactory<TKey, TypedDeletable>()
             .SetDataDirectory(dataDirectory)
-            .SetKeySerializer(GetKeySerializer<TKey>())
-            .SetValueSerializer(GetValueSerializer<TValue>())
+            .SetIsDeletedDelegate((in TKey _, in TypedDeletable value) => value.IsDeleted)
+            .SetMarkValueDeletedDelegate((ref TypedDeletable value) => value.IsDeleted = true)
+            .SetComparer(ZoneTreeRegistry.Default.GetComparer<TKey>())
+            .SetKeySerializer(ZoneTreeRegistry.Default.GetSerializer<TKey>() ?? new DefaultZoneSerializer<TKey>())
+            .SetValueSerializer(ZoneTreeRegistry.Default.GetSerializer<TypedDeletable>() ?? new DefaultZoneSerializer<TypedDeletable>())
             .OpenOrCreate();
     }
 
-    // TODO
-    private static IRefComparer<TKey> GetComparer<TKey>()
+    public static IZoneTree<TKey, TValue> Create<TKey, TValue>(ZoneStoreConfig storeConfig)
     {
-        throw new NotImplementedException();
-    }
-
-    private static ISerializer<TKey> GetKeySerializer<TKey>()
-    {
-        throw new NotImplementedException();
-    }
-
-    private static ISerializer<TValue> GetValueSerializer<TValue>()
-    {
-        throw new NotImplementedException();
+        var dataDirectory = Path.Combine(storeConfig.DataPath, storeConfig.StoreName);
+        return new ZoneTreeFactory<TKey, TValue>()
+            .SetComparer(ZoneTreeRegistry.Default.GetComparer<TKey>())
+            .SetDataDirectory(dataDirectory)
+            .SetKeySerializer(ZoneTreeRegistry.Default.GetSerializer<TKey>() ?? new DefaultZoneSerializer<TKey>())
+            .SetValueSerializer(ZoneTreeRegistry.Default.GetSerializer<TValue>() ?? new DefaultZoneSerializer<TValue>())
+            .OpenOrCreate();
     }
 }

@@ -3,41 +3,53 @@ using FusionZone;
 using FusionZone.Stores.ZoneTree;
 using IdGen;
 using RickDotNet.Extensions.Base;
-using Tenray.ZoneTree;
-using Tenray.ZoneTree.Comparers;
-using Tenray.ZoneTree.Serializers;
 using ZiggyCreatures.Caching.Fusion;
 
-const string dataPath = "C:\\Temp\\FusionZone\\ConsoleDemo\\Data";
+const string dataPath = "/tmp/FusionZone//ConsoleDemo/Data";
 if (!Directory.Exists(dataPath))
     Directory.CreateDirectory(dataPath);
 
 var config = new ZoneStoreConfig
 {
-    StoreName = "MyRecord",
+    StoreName = "BlobStore",
     DataPath = dataPath
 };
 
 var fusionCache = new FusionCache(new FusionCacheOptions());
 var zoneStore = new ZoneStore<long>(config, new IdGenerator(0));
-var myRecordStore = new FusionStore<long>(zoneStore, fusionCache);
-
-var criteria = FilterCriteria.For<MyRecord>(x => x.Id % 2 == 0).Take(20);
-//var items = await myRecordStore.List(criteria, CancellationToken.None);
-//var count = items.ValueOrDefault()?.Count() ?? 0;
+var blobStore = new FusionStore<long>(zoneStore, fusionCache);
 
 var ids = Enumerable.Range(1, 100).ToArray();
 foreach (var i in ids)
 {
     var record = new MyRecord(i, $"Hello, {i}");
-    var result = await myRecordStore.Save(i, record, CancellationToken.None);
+    var result = await blobStore.Save(i, record, CancellationToken.None);
     result.OnSuccess(x => Console.WriteLine("Success: {0}", x.Id));
     result.OnFailure(x => Console.WriteLine($"Failure: {x}"));
 }
 
+var stringResult = await blobStore.Save(120, "this is a string", CancellationToken.None);
+var compareList = await blobStore.List<MyRecord>().ValueOrDefaultAsync();
+Console.WriteLine("List count: {0}", compareList?.Count());
+
+var criteria = FilterCriteria.For<MyRecord>(x => x.Id % 2 == 0).Take(20);
+var firstEvens = await blobStore.List(criteria).ValueOrDefaultAsync();
+foreach (var item in firstEvens!)
+{
+    var result = await blobStore.Delete<MyRecord>(item.Id);
+    result.OnSuccess(x => Console.WriteLine("Deleted: {0}", x.Id));
+}
+
+var list3 = await blobStore.List<MyRecord>();
+var leftOvers = list3.ValueOrDefault()!;
+foreach (var (id, message) in leftOvers)
+{
+    Console.WriteLine("Id: {0}, Message: {1}", id, message);
+}
+
 foreach (var i in ids)
 {
-    var result = await myRecordStore.Get<MyRecord>(i, CancellationToken.None);
+    var result = await blobStore.Get<MyRecord>(i, CancellationToken.None);
     if (result)
         Console.WriteLine("Success: {0}", i);
 

@@ -19,7 +19,7 @@ public class FusionStore<TKey> : DataStore<TKey>
 
     private string GetCacheKey(TKey id) => $"{cacheName}-{id}";
     
-    public override async ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token)
+    public override async ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token = default)
     {
         var key = GetCacheKey(id);
         var cacheHit = await cache.TryGetAsync<TData>(key, token: token);
@@ -34,7 +34,7 @@ public class FusionStore<TKey> : DataStore<TKey>
         });
     }
 
-    public override async ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token)
+    public override async ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token = default)
     {
         var (insertResult, id) = await innerStore.Insert(data, token);
         var result = await insertResult.SelectAsync(async x =>
@@ -47,7 +47,7 @@ public class FusionStore<TKey> : DataStore<TKey>
         return (result, id);
     }
 
-    public override async ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token)
+    public override async ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token = default)
     {
         var saveResult = await innerStore.Save(id, data, token);
         var result = await saveResult.SelectAsync(async x =>
@@ -60,7 +60,7 @@ public class FusionStore<TKey> : DataStore<TKey>
         return result;
     }
 
-    public override async ValueTask<Result<TData>> Delete<TData>(TKey id, CancellationToken token)
+    public override async ValueTask<Result<TData>> Delete<TData>(TKey id, CancellationToken token = default)
     {
         var deleteResult = await innerStore.Delete<TData>(id, token);
         var result = await deleteResult.SelectAsync(async x =>
@@ -73,7 +73,7 @@ public class FusionStore<TKey> : DataStore<TKey>
         return result;
     }
 
-    public override ValueTask<Result<IEnumerable<TData>>> List<TData>(FilterCriteria<TData> filterCriteria, CancellationToken token = default)
+    public override ValueTask<Result<IEnumerable<TData>>> List<TData>(FilterCriteria<TData>? filterCriteria = null, CancellationToken token = default)
     {
         // TODO: decide if we want to cache this
         return innerStore.List(filterCriteria, token);

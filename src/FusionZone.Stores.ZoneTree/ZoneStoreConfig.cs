@@ -1,6 +1,4 @@
-﻿using Tenray.ZoneTree.Comparers;
-
-namespace FusionZone.Stores.ZoneTree;
+﻿namespace FusionZone.Stores.ZoneTree;
 
 public record ZoneStoreConfig
 {
