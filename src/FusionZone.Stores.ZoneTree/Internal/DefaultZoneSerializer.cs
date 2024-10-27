@@ -16,11 +16,13 @@ internal sealed class DefaultZoneSerializer<TData> : IZoneSerializer<TData>
 }
 
 // used by ZoneStore if none registered with ZoneTreeRegistry
-internal static class DefaultZoneSerializer
+internal class DefaultZoneSerializer
 {
     public static TData Deserialize<TData>(Memory<byte> bytes)
         => JsonSerializer.Deserialize<TData>(bytes.Span) ?? default!;
 
     public static Memory<byte> Serialize<TData>(in TData entry)
         => JsonSerializer.SerializeToUtf8Bytes(entry);
+    
+    public static DefaultZoneSerializer<TData> For<TData>() => new();
 }

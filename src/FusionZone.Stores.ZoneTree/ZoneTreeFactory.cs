@@ -13,8 +13,8 @@ public class FuzionZoneTreeFactory
             .SetIsDeletedDelegate((in TKey _, in TypedDeletable value) => value.IsDeleted)
             .SetMarkValueDeletedDelegate((ref TypedDeletable value) => value.IsDeleted = true)
             .SetComparer(ZoneTreeRegistry.Default.GetComparer<TKey>())
-            .SetKeySerializer(ZoneTreeRegistry.Default.GetSerializer<TKey>() ?? new DefaultZoneSerializer<TKey>())
-            .SetValueSerializer(ZoneTreeRegistry.Default.GetSerializer<TypedDeletable>() ?? new DefaultZoneSerializer<TypedDeletable>())
+            .SetKeySerializer(ZoneTreeRegistry.Default.GetSerializer<TKey>() ?? DefaultZoneSerializer.For<TKey>())
+            .SetValueSerializer(ZoneTreeRegistry.Default.GetSerializer<TypedDeletable>() ?? DefaultZoneSerializer.For<TypedDeletable>())
             .OpenOrCreate();
     }
 
@@ -24,8 +24,8 @@ public class FuzionZoneTreeFactory
         return new ZoneTreeFactory<TKey, TValue>()
             .SetComparer(ZoneTreeRegistry.Default.GetComparer<TKey>())
             .SetDataDirectory(dataDirectory)
-            .SetKeySerializer(ZoneTreeRegistry.Default.GetSerializer<TKey>() ?? new DefaultZoneSerializer<TKey>())
-            .SetValueSerializer(ZoneTreeRegistry.Default.GetSerializer<TValue>() ?? new DefaultZoneSerializer<TValue>())
+            .SetKeySerializer(ZoneTreeRegistry.Default.GetSerializer<TKey>() ?? DefaultZoneSerializer.For<TKey>())
+            .SetValueSerializer(ZoneTreeRegistry.Default.GetSerializer<TValue>() ?? DefaultZoneSerializer.For<TValue>())
             .OpenOrCreate();
     }
 }
