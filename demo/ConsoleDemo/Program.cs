@@ -2,6 +2,8 @@
 using FusionZone;
 using FusionZone.Stores.ZoneTree;
 using IdGen;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using RickDotNet.Extensions.Base;
 using ZiggyCreatures.Caching.Fusion;
 
@@ -9,15 +11,23 @@ const string dataPath = "/tmp/FusionZone//ConsoleDemo/Data";
 if (!Directory.Exists(dataPath))
     Directory.CreateDirectory(dataPath);
 
-var config = new ZoneStoreConfig
+var fusionStoreConfig = new FusionStoreConfig
 {
     StoreName = "BlobStore",
+    SkipCache = false,
+    DefaultFusionCacheEntryOptions = new FusionCacheEntryOptions
+    {
+        Duration = TimeSpan.FromMinutes(5),
+    }
+};
+var zoneStoreConfig = new ZoneStoreConfig
+{
+    StoreName = fusionStoreConfig.StoreName,
     DataPath = dataPath
 };
 
-var fusionCache = new FusionCache(new FusionCacheOptions());
-var zoneStore = new ZoneStore<long>(config, new IdGenerator(0));
-var blobStore = new FusionStore<long>(zoneStore, fusionCache);
+var zoneStore = new ZoneStore<long>(zoneStoreConfig, new IdGenerator(0));
+var blobStore = new FusionStore<long>(zoneStore, fusionStoreConfig);
 
 var ids = Enumerable.Range(1, 100).ToArray();
 foreach (var i in ids)

@@ -7,20 +7,30 @@ namespace FusionZone;
 
 public class FusionStore<TKey> : DataStore<TKey>
 {
-    private readonly string cacheName = $"FusionStore-{typeof(TKey).FullName}";
+    private readonly string cacheName;
     private readonly IDataStore<TKey> innerStore;
-    private readonly IFusionCache cache;
+    private readonly FusionCache cache;
 
-    public FusionStore(IDataStore<TKey> innerStore, IFusionCache cache)
+    public bool SkipCache { get; set; }
+
+    public FusionStore(IDataStore<TKey> innerStore, FusionStoreConfig config)
     {
         this.innerStore = innerStore;
-        this.cache = cache;
+        cacheName = $"FusionStore-{config.StoreName}";
+        SkipCache = config.SkipCache;
+
+        var entryOptions = config.DefaultFusionCacheEntryOptions ?? new FusionCacheEntryOptions();
+        var fusionCacheOptions = new FusionCacheOptions { CacheName = cacheName, DefaultEntryOptions = entryOptions };
+        cache = new FusionCache(fusionCacheOptions);
     }
 
     private string GetCacheKey(TKey id) => $"{cacheName}-{id}";
-    
+
     public override async ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token = default)
     {
+        if (SkipCache)
+            return await innerStore.Get<TData>(id, token);
+
         var key = GetCacheKey(id);
         var cacheHit = await cache.TryGetAsync<TData>(key, token: token);
         if (cacheHit.HasValue)
@@ -37,6 +47,8 @@ public class FusionStore<TKey> : DataStore<TKey>
     public override async ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token = default)
     {
         var (insertResult, id) = await innerStore.Insert(data, token);
+        if (SkipCache) return (insertResult, id);
+        
         var result = await insertResult.SelectAsync(async x =>
         {
             var key = GetCacheKey(id);
@@ -50,6 +62,8 @@ public class FusionStore<TKey> : DataStore<TKey>
     public override async ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token = default)
     {
         var saveResult = await innerStore.Save(id, data, token);
+        if (SkipCache) return saveResult;
+        
         var result = await saveResult.SelectAsync(async x =>
         {
             var key = GetCacheKey(id);
@@ -75,7 +89,7 @@ public class FusionStore<TKey> : DataStore<TKey>
 
     public override ValueTask<Result<IEnumerable<TData>>> List<TData>(FilterCriteria<TData>? filterCriteria = null, CancellationToken token = default)
     {
-        // TODO: decide if we want to cache this
+        // TODO: in order to cache here, we'd need to consider the filter criteria
         return innerStore.List(filterCriteria, token);
     }
 
