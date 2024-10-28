@@ -5,19 +5,24 @@ using ZiggyCreatures.Caching.Fusion;
 
 namespace FusionStore;
 
-public interface IFusionStore<TKey> : IDataStore<TKey>;
+public interface IFusionStore<TKey> : IDataStore<TKey>
+{
+    string StoreName { get; }
+}
 public class FusionStore<TKey> : DataStore<TKey>, IFusionStore<TKey>
 {
     private readonly string cacheName;
     private readonly IDataStore<TKey> innerStore;
     private readonly FusionCache cache;
 
+    public string StoreName { get; }
     public bool SkipCache { get; set; }
 
     public FusionStore(IDataStore<TKey> innerStore, FusionStoreConfig config)
     {
         this.innerStore = innerStore;
-        cacheName = $"FusionStore-{config.StoreName}";
+        StoreName = config.StoreName;
+        cacheName = $"FusionStore-{StoreName}";
         SkipCache = config.SkipCache;
 
         var entryOptions = config.DefaultFusionCacheEntryOptions ?? new FusionCacheEntryOptions();
