@@ -1,15 +1,16 @@
+using System.Data.Common;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using RickDotNet.Base;
 
 namespace FusionStore.Stores.Sqlite;
 
-public class SqliteCommandManager
+public class SqliteCommandExecutor
 {
     private readonly string connectionString;
     private readonly ILogger logger;
 
-    public SqliteCommandManager(string connectionString, ILogger logger)
+    public SqliteCommandExecutor(string connectionString, ILogger logger)
     {
         this.connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -31,21 +32,42 @@ public class SqliteCommandManager
         }
     }
 
-    public async Task<Result<T>> ExecuteCommandAsync<T>(Func<SqliteCommand, Task<T>> execute)
+    public Task<Result<T>> ExecuteCommandAsync<T>(Func<SqliteCommand, Task<Result<T>>> execute)
     {
-        try
+        return Result.Try(async () =>
         {
             await using var connection = new SqliteConnection(connectionString);
             await connection.OpenAsync();
             await using var command = connection.CreateCommand();
 
-            var result = await execute(command);
-            return result ?? Result.Failure<T>("Item not found");
-        }
-        catch (Exception ex)
+            return await execute(command);  
+        });
+    }
+    
+    public Task<Result<T>> ExecuteTransactionAsync<T>(Func<DbTransaction, Task<Result<T>>> execute)
+    {
+        return Result.Try(async () =>
         {
-            logger.LogError(ex, "Failed to execute SQLite command");
-            return ex;
-        }
+            await using var connection = new SqliteConnection(connectionString);
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                var result = await execute(transaction);  // execute within transaction
+                if (result)
+                    await transaction.CommitAsync();  // commit if all succeeds
+                else
+                    await transaction.RollbackAsync();  // rollback if failure
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();  // ensure rollback on exception
+                logger.LogError(ex, "Failed to execute transaction");
+                throw;
+            }
+        });
     }
 }

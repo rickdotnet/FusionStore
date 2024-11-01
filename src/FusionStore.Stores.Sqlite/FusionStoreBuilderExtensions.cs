@@ -1,3 +1,5 @@
+using RickDotNet.Extensions.Base;
+
 namespace FusionStore.Stores.Sqlite;
 
 public static class FusionStoreBuilderExtensions
@@ -13,7 +15,8 @@ public static class FusionStoreBuilderExtensions
         };
         
         var store = new SqliteStore(storeConfig);
-        store.Initialize();
+        var initResult = store.Initialize();
+        initResult.OnError(error => throw new InvalidOperationException($"Failed to initialize SqliteStore: {error}"));
         
         builder.WithInnerStore(store);
         return builder;

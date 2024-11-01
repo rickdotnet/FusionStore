@@ -10,7 +10,7 @@ namespace FusionStore.Stores.Sqlite;
 // only supporting longs at the moment
 public class SqliteStore : DataStore<long>
 {
-    private readonly SqliteCommandManager connection;
+    private readonly SqliteCommandExecutor connection;
 
     public SqliteStore(SqliteStoreConfig storeConfig, ILogger<SqliteStore>? logger = null)
     {
@@ -20,58 +20,128 @@ public class SqliteStore : DataStore<long>
             Pooling = true
         }.ToString();
 
-        connection = new SqliteCommandManager(connectionString, logger ?? NullLogger<SqliteStore>.Instance);
+        connection = new SqliteCommandExecutor(connectionString, logger ?? NullLogger<SqliteStore>.Instance);
     }
-    
-    public void Initialize()
+
+    public Result<VoidResult> Initialize()
     {
-        connection.ExecuteCommand(command =>
+        return Result.Try(() =>
+        {
+            connection.ExecuteCommand(command =>
+            {
+                command.CommandText = "CREATE TABLE IF NOT EXISTS DataStore (Id INTEGER PRIMARY KEY, dataType TEXT, data BLOB)";
+                command.ExecuteNonQuery();
+            });
+
+            return VoidResult.Default;
+        });
+    }
+
+    public async Task<Result<VoidResult>> InitializeAsync()
+    {
+        var result = await connection.ExecuteCommandAsync<int>(async command =>
         {
             command.CommandText = "CREATE TABLE IF NOT EXISTS DataStore (Id INTEGER PRIMARY KEY, dataType TEXT, data BLOB)";
-            command.ExecuteNonQuery();
+            return await command.ExecuteNonQueryAsync();
         });
-        
-        // initialized = true; // we're the only user right now, but might need to be more sophisticated in the future
+
+        return result.SelectMany(_ => Result.Success(VoidResult.Default));
     }
 
     public override async ValueTask<Result<TData>> Get<TData>(long id, CancellationToken token = default)
     {
         var dataType = typeof(TData).Name;
+
         var result = await connection.ExecuteCommandAsync(async command =>
         {
-            command.CommandText = "SELECT data FROM DataStore where Id = @id and dataType = @dataType";
+            command.CommandText = "SELECT data FROM DataStore WHERE Id = @id AND dataType = @dataType";
             command.Parameters.AddWithValue("@id", id);
             command.Parameters.AddWithValue("@dataType", dataType);
-            var dbResult = await command.ExecuteScalarAsync(token);
-            if (dbResult == null) return default; // returns Result.Failure<TData>("Item not found");
 
-            var bytes = (byte[])dbResult!;
+            var dbResult = await command.ExecuteScalarAsync(token);
+            if (dbResult == null)
+                return Result.Failure<TData>("Item not found"); // Return explicit failure result
+
+            var bytes = (byte[])dbResult;
             var data = DefaultSerializer.Deserialize<TData>(bytes);
-            return data ?? default; // returns Result.Failure<TData>("Item not found");
+
+            return data != null ? Result.Success(data) : Result.Failure<TData>("Failed to deserialize the result.");
         });
 
-        return result!;
+        return result;
     }
 
-    public override ValueTask<(Result<TData> result, long id)> Insert<TData>(TData data, CancellationToken token = default)
+    public override async ValueTask<(Result<TData> result, long id)> Insert<TData>(TData data, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        if (data == null)
+            return (Result.Failure<TData>("Cannot save null data"), 0);
+
+        var insertResult = await connection.ExecuteCommandAsync<long>(async command =>
+        {
+            var dataType = typeof(TData).Name;
+            var serializedData = DefaultSerializer.Serialize(data);
+            command.CommandText = "INSERT INTO DataStore (dataType, data) VALUES (@dataType, @data); SELECT last_insert_rowid();";
+            command.Parameters.AddWithValue("@dataType", dataType);
+            command.Parameters.AddWithValue("@data", serializedData);
+
+            var newId = (long)(await command.ExecuteScalarAsync(token))!; // this returns the auto-incremented ID
+            return newId;
+        });
+
+        return insertResult
+            ? (data, insertResult.ValueOrDefault())
+            : (Result.Failure<TData>("Insert failed"), default);
     }
 
-    public override ValueTask<Result<TData>> Save<TData>(long id, TData data, CancellationToken token = default)
+    public override async ValueTask<Result<TData>> Save<TData>(long id, TData data, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        if (data == null)
+            return Result.Failure<TData>("Cannot save null data");
+
+        var serializedResult = Result.Try(() => DefaultSerializer.Serialize(data));
+        var result = await serializedResult.SelectManyAsync(serializedData =>
+        {
+            return connection.ExecuteCommandAsync<TData>(async command =>
+            {
+                var dataType = typeof(TData).Name;
+                command.CommandText = "UPDATE DataStore SET data = @data WHERE Id = @id AND dataType = @dataType";
+                command.Parameters.AddWithValue("@id", id);
+                command.Parameters.AddWithValue("@dataType", dataType);
+                command.Parameters.AddWithValue("@data", serializedData);
+
+                var rowsAffected = await command.ExecuteNonQueryAsync(token);
+                if (rowsAffected != 0) return data;
+
+                var (insertResult, _) = await Insert(data, token);
+                return insertResult;
+            });
+        });
+
+        return result;
     }
 
-    public override ValueTask<Result<TData>> Delete<TData>(long id, CancellationToken token = default)
+    public override async ValueTask<Result<TData>> Delete<TData>(long id, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        var result = await Get<TData>(id, token);
+        if (!result) return Result.Failure<TData>("Item not found");
+
+        var delete = await connection.ExecuteCommandAsync<long>(async command =>
+        {
+            command.CommandText = "DELETE FROM DataStore WHERE Id = @id AND dataType = @dataType";
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@dataType", typeof(TData).Name);
+
+            var rowsAffected = await command.ExecuteNonQueryAsync(token);
+            return rowsAffected;
+        });
+
+        return delete.ValueOrDefault() > 0 ? result : Result.Failure<TData>("Item not Deleted");
     }
 
     protected override async ValueTask<IEnumerable<long>> GetAllIds<TData>(CancellationToken token)
     {
         var dataType = typeof(TData).Name;
-        var idResult = await connection.ExecuteCommandAsync(async command =>
+        var idResult = await connection.ExecuteCommandAsync<List<long>>(async command =>
         {
             command.CommandText = "SELECT Id FROM DataStore where dataType = @dataType";
             command.Parameters.AddWithValue("@dataType", dataType);
@@ -80,8 +150,7 @@ public class SqliteStore : DataStore<long>
 
             while (await reader.ReadAsync(token))
             {
-                var bytes = reader.GetFieldValue<byte[]>(0);
-                var value = DefaultSerializer.Deserialize<long>(bytes);
+                var value = reader.GetFieldValue<long>(0);
                 ids.Add(value);
             }
 
@@ -94,7 +163,7 @@ public class SqliteStore : DataStore<long>
     public override async ValueTask<Result<IEnumerable<TData>>> List<TData>(FilterCriteria<TData>? filterCriteria = null, CancellationToken token = default)
     {
         var dataType = typeof(TData).Name;
-        var listResult = await connection.ExecuteCommandAsync(async command =>
+        var listResult = await connection.ExecuteCommandAsync<IEnumerable<TData>>(async command =>
         {
             command.CommandText = "SELECT data FROM DataStore where dataType = @dataType";
             command.Parameters.AddWithValue("@dataType", dataType);
@@ -127,7 +196,7 @@ public class SqliteStore : DataStore<long>
                     results.Add(value);
             }
 
-            return results.AsEnumerable();
+            return Result.Success(results.AsEnumerable());
         });
 
         return listResult;
