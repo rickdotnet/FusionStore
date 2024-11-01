@@ -7,11 +7,12 @@ using RickDotNet.Extensions.Base;
 
 namespace FusionStore.Stores.Sqlite;
 
-public class SqliteStore<TKey> : DataStore<TKey>
+// only supporting longs at the moment
+public class SqliteStore : DataStore<long>
 {
     private readonly SqliteCommandManager connection;
 
-    public SqliteStore(SqliteStoreConfig storeConfig, ILogger<SqliteStore<TKey>>? logger = null)
+    public SqliteStore(SqliteStoreConfig storeConfig, ILogger<SqliteStore>? logger = null)
     {
         var connectionString = new SqliteConnectionStringBuilder
         {
@@ -19,21 +20,21 @@ public class SqliteStore<TKey> : DataStore<TKey>
             Pooling = true
         }.ToString();
 
-        connection = new SqliteCommandManager(connectionString, logger ?? NullLogger<SqliteStore<TKey>>.Instance);
+        connection = new SqliteCommandManager(connectionString, logger ?? NullLogger<SqliteStore>.Instance);
     }
     
     public void Initialize()
     {
         connection.ExecuteCommand(command =>
         {
-            command.CommandText = "CREATE TABLE IF NOT EXISTS DataStore (Id TEXT, dataType TEXT, data BLOB)";
+            command.CommandText = "CREATE TABLE IF NOT EXISTS DataStore (Id INTEGER PRIMARY KEY, dataType TEXT, data BLOB)";
             command.ExecuteNonQuery();
         });
         
         // initialized = true; // we're the only user right now, but might need to be more sophisticated in the future
     }
 
-    public override async ValueTask<Result<TData>> Get<TData>(TKey id, CancellationToken token = default)
+    public override async ValueTask<Result<TData>> Get<TData>(long id, CancellationToken token = default)
     {
         var dataType = typeof(TData).Name;
         var result = await connection.ExecuteCommandAsync(async command =>
@@ -52,22 +53,22 @@ public class SqliteStore<TKey> : DataStore<TKey>
         return result!;
     }
 
-    public override ValueTask<(Result<TData> result, TKey id)> Insert<TData>(TData data, CancellationToken token = default)
+    public override ValueTask<(Result<TData> result, long id)> Insert<TData>(TData data, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }
 
-    public override ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token = default)
+    public override ValueTask<Result<TData>> Save<TData>(long id, TData data, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }
 
-    public override ValueTask<Result<TData>> Delete<TData>(TKey id, CancellationToken token = default)
+    public override ValueTask<Result<TData>> Delete<TData>(long id, CancellationToken token = default)
     {
         throw new NotImplementedException();
     }
 
-    protected override async ValueTask<IEnumerable<TKey>> GetAllIds<TData>(CancellationToken token)
+    protected override async ValueTask<IEnumerable<long>> GetAllIds<TData>(CancellationToken token)
     {
         var dataType = typeof(TData).Name;
         var idResult = await connection.ExecuteCommandAsync(async command =>
@@ -75,12 +76,12 @@ public class SqliteStore<TKey> : DataStore<TKey>
             command.CommandText = "SELECT Id FROM DataStore where dataType = @dataType";
             command.Parameters.AddWithValue("@dataType", dataType);
             var reader = await command.ExecuteReaderAsync(token);
-            var ids = new List<TKey>();
+            var ids = new List<long>();
 
             while (await reader.ReadAsync(token))
             {
                 var bytes = reader.GetFieldValue<byte[]>(0);
-                var value = DefaultSerializer.Deserialize<TKey>(bytes);
+                var value = DefaultSerializer.Deserialize<long>(bytes);
                 ids.Add(value);
             }
 

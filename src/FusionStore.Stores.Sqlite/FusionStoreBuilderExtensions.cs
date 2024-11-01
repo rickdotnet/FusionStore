@@ -12,7 +12,7 @@ public static class FusionStoreBuilderExtensions
             DataPath = dataPath
         };
         
-        var store = new SqliteStore<long>(storeConfig);
+        var store = new SqliteStore(storeConfig);
         store.Initialize();
         
         builder.WithInnerStore(store);
