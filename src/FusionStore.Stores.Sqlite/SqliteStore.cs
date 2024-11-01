@@ -29,7 +29,7 @@ public class SqliteStore : DataStore<long>
         {
             connection.ExecuteCommand(command =>
             {
-                command.CommandText = "CREATE TABLE IF NOT EXISTS DataStore (Id INTEGER PRIMARY KEY, dataType TEXT, data BLOB)";
+                command.CommandText = GetCommandText(Operation.Initialize);
                 command.ExecuteNonQuery();
             });
 
@@ -41,7 +41,7 @@ public class SqliteStore : DataStore<long>
     {
         var result = await connection.ExecuteCommandAsync<int>(async command =>
         {
-            command.CommandText = "CREATE TABLE IF NOT EXISTS DataStore (Id INTEGER PRIMARY KEY, dataType TEXT, data BLOB)";
+            command.CommandText = GetCommandText(Operation.Initialize);
             return await command.ExecuteNonQueryAsync();
         });
 
@@ -54,7 +54,7 @@ public class SqliteStore : DataStore<long>
 
         var result = await connection.ExecuteCommandAsync(async command =>
         {
-            command.CommandText = "SELECT data FROM DataStore WHERE Id = @id AND dataType = @dataType";
+            command.CommandText = GetCommandText(Operation.Get);
             command.Parameters.AddWithValue("@id", id);
             command.Parameters.AddWithValue("@dataType", dataType);
 
@@ -80,7 +80,7 @@ public class SqliteStore : DataStore<long>
         {
             var dataType = typeof(TData).Name;
             var serializedData = DefaultSerializer.Serialize(data);
-            command.CommandText = "INSERT INTO DataStore (dataType, data) VALUES (@dataType, @data); SELECT last_insert_rowid();";
+            command.CommandText = GetCommandText(Operation.Insert);
             command.Parameters.AddWithValue("@dataType", dataType);
             command.Parameters.AddWithValue("@data", serializedData);
 
@@ -104,7 +104,7 @@ public class SqliteStore : DataStore<long>
             return connection.ExecuteCommandAsync<TData>(async command =>
             {
                 var dataType = typeof(TData).Name;
-                command.CommandText = "UPDATE DataStore SET data = @data WHERE Id = @id AND dataType = @dataType";
+                command.CommandText = GetCommandText(Operation.Save);
                 command.Parameters.AddWithValue("@id", id);
                 command.Parameters.AddWithValue("@dataType", dataType);
                 command.Parameters.AddWithValue("@data", serializedData);
@@ -127,7 +127,7 @@ public class SqliteStore : DataStore<long>
 
         var delete = await connection.ExecuteCommandAsync<long>(async command =>
         {
-            command.CommandText = "DELETE FROM DataStore WHERE Id = @id AND dataType = @dataType";
+            command.CommandText = GetCommandText(Operation.Delete);
             command.Parameters.AddWithValue("@id", id);
             command.Parameters.AddWithValue("@dataType", typeof(TData).Name);
 
@@ -143,7 +143,7 @@ public class SqliteStore : DataStore<long>
         var dataType = typeof(TData).Name;
         var idResult = await connection.ExecuteCommandAsync<List<long>>(async command =>
         {
-            command.CommandText = "SELECT Id FROM DataStore where dataType = @dataType";
+            command.CommandText = GetCommandText(Operation.GetIds);
             command.Parameters.AddWithValue("@dataType", dataType);
             var reader = await command.ExecuteReaderAsync(token);
             var ids = new List<long>();
@@ -165,7 +165,7 @@ public class SqliteStore : DataStore<long>
         var dataType = typeof(TData).Name;
         var listResult = await connection.ExecuteCommandAsync<IEnumerable<TData>>(async command =>
         {
-            command.CommandText = "SELECT data FROM DataStore where dataType = @dataType";
+            command.CommandText = GetCommandText(Operation.List);
             command.Parameters.AddWithValue("@dataType", dataType);
 
             filterCriteria ??= FilterCriteria.For<TData>();
@@ -200,5 +200,45 @@ public class SqliteStore : DataStore<long>
         });
 
         return listResult;
+    }
+    
+    private static readonly Dictionary<Operation, string> Commands = new()
+    {
+        [Operation.Initialize] = "CREATE TABLE IF NOT EXISTS DataStore (Id INTEGER PRIMARY KEY, dataType TEXT, data BLOB)",
+
+        [Operation.Get] = "SELECT data FROM DataStore WHERE Id = @id AND dataType = @dataType",
+        
+        [Operation.GetIds] = "SELECT Id FROM DataStore WHERE dataType = @dataType",
+
+        [Operation.Insert] =
+            "INSERT INTO DataStore (dataType, data) VALUES (@dataType, @data); SELECT last_insert_rowid();",
+        
+        [Operation.Save] = 
+            "UPDATE DataStore SET data = @data WHERE Id = @id AND dataType = @dataType",
+        
+        [Operation.Delete] = 
+            "DELETE FROM DataStore WHERE Id = @id AND dataType = @dataType",
+        
+        [Operation.List] =
+            "SELECT data FROM DataStore where dataType = @dataType"
+    };
+
+    private static string GetCommandText(Operation operation)
+    {
+        if (!Commands.TryGetValue(operation, out var commandText))
+            throw new InvalidOperationException($"No command text found for operation {operation}.");
+
+        return commandText;
+    }
+    
+    enum Operation
+    {
+        Initialize,
+        Get,
+        GetIds,
+        Insert,
+        Save,
+        Delete,
+        List
     }
 }
