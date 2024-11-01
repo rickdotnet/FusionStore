@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\FusionStore.Extensions.Microsoft.Hosting\FusionStore.Extensions.Microsoft.Hosting.csproj" />
+      <ProjectReference Include="..\..\src\FusionStore.Stores.Sqlite\FusionStore.Stores.Sqlite.csproj" />
       <ProjectReference Include="..\..\src\FusionStore.Stores.ZoneTree\FusionStore.Stores.ZoneTree.csproj" />
     </ItemGroup>
 

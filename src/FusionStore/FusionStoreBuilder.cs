@@ -27,6 +27,9 @@ public class FusionStoreBuilder<TKey> : IFusionStoreBuilder<TKey>
 
     public IFusionStoreBuilder<TKey> WithInnerStore(IDataStore<TKey> store)
     {
+        if(innerStore != null)
+            throw new InvalidOperationException("Inner store already set");
+        
         innerStore = store;
         return this;
     }

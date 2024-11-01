@@ -47,7 +47,7 @@ public class ZoneStore<TKey> : DataStore<TKey>
             {
                 var value = serializer != null
                     ? serializer.Deserialize(entry.Data)
-                    : DefaultZoneSerializer.Deserialize<TData>(entry.Data);
+                    : DefaultSerializer.Deserialize<TData>(entry.Data);
 
                 return value == null
                     ? Result.Failure<TData>("Unable to deserialize TypedDeletable")
@@ -72,7 +72,7 @@ public class ZoneStore<TKey> : DataStore<TKey>
     public override ValueTask<Result<TData>> Save<TData>(TKey id, TData data, CancellationToken token = default)
     {
         var serializer = ZoneTreeRegistry.Default.GetSerializer<TData>();
-        var serialized = serializer?.Serialize(data) ?? DefaultZoneSerializer.Serialize(data);
+        var serialized = serializer?.Serialize(data) ?? DefaultSerializer.Serialize(data);
 
         var entry = TypedDeletable.Create<TData>(serialized);
         var result = Result.Try(() =>

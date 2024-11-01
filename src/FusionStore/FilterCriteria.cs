@@ -7,20 +7,22 @@ public abstract class FilterCriteria
     public static FilterCriteria<T> For<T>() => new();
     public static FilterCriteria<T> For<T>(Expression<Func<T, bool>> filter) => new(filter);
 }
+
 public sealed class FilterCriteria<T>
 {
-    public Expression<Func<T, bool>>? Filter { get; private set; }
+    public Expression<Func<T, bool>> Filter { get; private set; }
     public int SkipValue { get; private set; }
     public int TakeValue { get; private set; } = int.MaxValue;
-    
+
     public FilterCriteria()
     {
+        Filter = _ => true;
     }
-    
+
     public FilterCriteria(Expression<Func<T, bool>> filter, int skip = 0, int take = int.MaxValue)
     {
         Filter = filter;
-        SkipValue = skip; 
+        SkipValue = skip;
         TakeValue = take;
     }
 

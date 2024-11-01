@@ -16,14 +16,14 @@ public class FusionBuilder : IFusionBuilder
         this.hostBuilderServices = hostBuilderServices;
     }
 
-    private static string GetStoreKeyName<TKey>(string storeName) => $"Fusion-{storeName}";
+    private static string GetStoreKeyName(string storeName) => $"Fusion-{storeName}";
 
     public IFusionBuilder WithKey<TKey>(Action<IFusionStoreBuilder<TKey>> configure)
     {
         var storeBuilder = new FusionStoreBuilder<TKey>();
         configure(storeBuilder);
 
-        var storeName = GetStoreKeyName<TKey>(storeBuilder.Config.StoreName);
+        var storeName = GetStoreKeyName(storeBuilder.Config.StoreName);
         if (storeNames.Contains(storeName))
         {
             // TODO: log warning?
