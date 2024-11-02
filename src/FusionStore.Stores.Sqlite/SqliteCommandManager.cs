@@ -34,7 +34,7 @@ public class SqliteCommandExecutor
 
     public Task<Result<T>> ExecuteCommandAsync<T>(Func<SqliteCommand, Task<Result<T>>> execute)
     {
-        return Result.Try(async () =>
+        return Result.TryAsync(async () =>
         {
             await using var connection = new SqliteConnection(connectionString);
             await connection.OpenAsync();
@@ -46,7 +46,7 @@ public class SqliteCommandExecutor
     
     public Task<Result<T>> ExecuteTransactionAsync<T>(Func<DbTransaction, Task<Result<T>>> execute)
     {
-        return Result.Try(async () =>
+        return Result.TryAsync(async () =>
         {
             await using var connection = new SqliteConnection(connectionString);
             await connection.OpenAsync();

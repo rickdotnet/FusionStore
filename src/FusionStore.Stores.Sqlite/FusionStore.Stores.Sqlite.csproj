@@ -6,6 +6,10 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup Label="Package">
+        <PackageId>RickDotNet.FusionStore.Stores.Sqlite</PackageId>
+    </PropertyGroup>
+    
     <ItemGroup>
       <ProjectReference Include="..\FusionStore\FusionStore.csproj" />
     </ItemGroup>
